@@ -1,0 +1,107 @@
+import pygame
+import random
+import math
+
+pygame.init()
+
+screen_width = 600
+screen_height = 600
+screen = pygame.display.set_mode((screen_width, screen_height))
+
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+
+player_width = 40
+player_height = 10
+player_x = (screen_width - player_width) // 2
+player_y = screen_height - 50
+player_speed = 5
+
+bullet_width = 10
+bullet_height = 15
+bullet_speed = -7
+bullet_active = False
+bullet_x = 0
+bullet_y = 0
+
+enemy_size = 40
+enemy_speed = 1.5
+enemies = []
+for i in range(5):
+    enemy_x = random.randint(0, screen_width - enemy_size)
+    enemy_y = random.randint(20, 100)
+    enemies.append([enemy_x, enemy_y])
+
+
+score = 0
+font = pygame.font.Font(None, 36)
+
+def draw_player(x, y):
+    point1 = (x + player_width // 2, y)
+    point2 = (x, y + player_height + 20)
+    point3 = (x + player_width, y + player_height + 20)
+    pygame.draw.polygon(screen, GREEN, [point1, point2, point3])
+
+
+def draw_bullet(x, y):
+    pygame.draw.rect(screen, RED, (x, y, bullet_width, bullet_height))
+
+def draw_enemy(x, y):
+    pygame.draw.circle(screen, WHITE, (x + enemy_size // 2, y + enemy_size // 2), enemy_size // 2)
+
+def is_collision(enemy_x, enemy_y, bullet_x, bullet_y):
+    distance = math.sqrt(math.pow(enemy_x - bullet_x, 2) + math.pow(enemy_y - bullet_y, 2))
+    return distance < enemy_size // 2
+
+running = True
+while running:
+    screen.fill(BLACK)
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    keys = pygame.key.get_pressed()
+
+    if keys[pygame.K_LEFT] and player_x > 0:
+        player_x -= player_speed
+    if keys[pygame.K_RIGHT] and player_x < screen_width - player_width:
+        player_x += player_speed
+
+    if keys[pygame.K_SPACE] and not bullet_active:
+        bullet_active = True
+        bullet_x = player_x + player_width // 2 - bullet_width // 2
+        bullet_y = player_y
+
+    if bullet_active:
+        bullet_y += bullet_speed
+        if bullet_y < 0:
+            bullet_active = False
+
+    draw_player(player_x, player_y)
+    if bullet_active:
+        draw_bullet(bullet_x, bullet_y)
+
+    for enemy in enemies:
+        enemy[1] += enemy_speed
+        if enemy[1] > screen_height:
+            enemy[0] = random.randint(0, screen_width - enemy_size)
+            enemy[1] = random.randint(-100, -40)
+        draw_enemy(enemy[0], enemy[1])
+
+        if bullet_active and is_collision(enemy[0], enemy[1], bullet_x, bullet_y):
+            score += 1
+            bullet_active = False
+            enemy[0] = random.randint(0, screen_width - enemy_size)
+            enemy[1] = random.randint(-100, -40)
+
+    score_text = font.render(f"Score: {score}", True, WHITE)
+    screen.blit(score_text, (10, 10))
+
+    pygame.display.flip()
+
+    pygame.time.Clock().tick(60)
+
+pygame.quit()
